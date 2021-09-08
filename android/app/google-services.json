@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "353190836377",
+    "project_id": "iou-app-bfdd5",
+    "storage_bucket": "iou-app-bfdd5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:353190836377:android:2b5ac48c9475fc68c7e008",
+        "android_client_info": {
+          "package_name": "com.gspteck.iou"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "353190836377-99e6191rll0t9sp787krhrvp3n7rpgif.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9Z6xA9kur8oyCv490pKYEESLODDOjj0A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "353190836377-99e6191rll0t9sp787krhrvp3n7rpgif.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
