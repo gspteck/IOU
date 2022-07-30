@@ -1,3 +1,9 @@
+# IOU
+
+IOU is a simple app made using the Flutter Framework. The funcionality of the app is to save the amount of money you may owe someone. You can add/remove people and add/remove money. The UI is very simplistic with not too much crazyness.
+
+Download if here: https://play.google.com/store/apps/details?id=com.gspteck.iou
+
 ## Other
 
 Support us by buying awsome merch on our [Teespring page](https://teespring.com/it/stores/gspteck-2).
