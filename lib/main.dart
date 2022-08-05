@@ -2,12 +2,10 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'package:appodeal_flutter/appodeal_flutter.dart';
+import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 void main() {
   runApp(MyApp());
@@ -34,25 +32,15 @@ class _HomePageState extends State<HomePage> {
   TextEditingController nameEditController = TextEditingController();
   TextEditingController moneyEditController = TextEditingController();
 
-  TutorialCoachMark tutorialCoachMark;
-  List<TargetFocus> targets = [];
-
-  GlobalKey keyButton = GlobalKey();
-  GlobalKey keyButton1 = GlobalKey();
-  GlobalKey keyButton2 = GlobalKey();
-  GlobalKey keyButton3 = GlobalKey();
-  GlobalKey keyButton4 = GlobalKey();
-
-  bool watchedTutorial = false;
-
-  String _username = '';
+  String? _username = '';
   String _total = '0.00';
+  int tasks = 0;
 
-  var _data = [];
+  List<dynamic>? _data = [];
   int _dataLength = 0;
 
-  File jsonFile;
-  Directory dir;
+  late File jsonFile;
+  late Directory dir;
   bool fileExists = false;
 
   @override
@@ -116,7 +104,6 @@ class _HomePageState extends State<HomePage> {
                         Spacer(),
                         Text(
                           '$_total\$',
-                          key: keyButton2,
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 30,
@@ -141,7 +128,6 @@ class _HomePageState extends State<HomePage> {
                             width: _width * 0.6,
                             height: _height * 0.1,
                             child: TextButton(
-                              key: keyButton,
                               child: Text(
                                 '$_username',
                                 style: TextStyle(
@@ -163,70 +149,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Padding(padding: EdgeInsets.only(bottom: _height * 0.02)),
-              Offstage(
-                offstage: watchedTutorial,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: _width * 0.07,
-                    right: _width * 0.07,
-                    bottom: _height * 0.01,
-                  ),
-                  child: Container(
-                    width: _width * 0.85,
-                    height: _height * 0.1,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.green,
-                        width: 3,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        TextButton(
-                          key: keyButton4,
-                          child: Text(
-                            'GSPTeck',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 25,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          onPressed: () {
-                            _watchAd();
-                          },
-                        ),
-                        Spacer(),
-                        Container(
-                          height: _height * 0.08,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: TextButton(
-                            key: keyButton3,
-                            child: Text(
-                              '0\$',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 25,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            onPressed: () {
-                              _watchAd();
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(left: _width * 0.01),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
               Expanded(
                 child: ListView.builder(
                   itemCount: _dataLength,
@@ -251,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             TextButton(
                               child: Text(
-                                '${_data[i]["name"]}',
+                                '${_data![i]["name"]}',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 25,
@@ -272,7 +194,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                               child: TextButton(
                                 child: Text(
-                                  '${_data[i]["money"]}\$',
+                                  '${_data![i]["money"]}\$',
                                   style: TextStyle(
                                     color: Colors.black,
                                     fontSize: 25,
@@ -299,7 +221,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         bottomNavigationBar: Container(
-          key: keyButton1,
           height: 75,
           decoration: BoxDecoration(color: Colors.green),
           child: TextButton(
@@ -320,22 +241,28 @@ class _HomePageState extends State<HomePage> {
   }
 
   _init() async {
-    Appodeal.setAppKeys(
-      androidAppKey: 'd44844485ed9327b1faf7321ccb7e12fb4e4773bdaed80a1',
+    Appodeal.initialize(
+      appKey: "d44844485ed9327b1faf7321ccb7e12fb4e4773bdaed80a1",
+      adTypes: [
+        AppodealAdType.Interstitial,
+        AppodealAdType.RewardedVideo,
+        AppodealAdType.Banner,
+        AppodealAdType.MREC
+      ],
     );
-    await Appodeal.initialize(
-      hasConsent: true,
-      adTypes: [AdType.BANNER, AdType.INTERSTITIAL, AdType.NON_SKIPPABLE],
-      testMode: false,
-    );
-    _watchAd();
+    Future.delayed(const Duration(seconds: 10), _watchAd());
 
     _loadData();
     _loadTotal();
   }
 
   _watchAd() {
-    Appodeal.show(AdType.INTERSTITIAL);
+    if (tasks <= 0) {
+      Appodeal.show(AppodealAdType.Interstitial);
+      setState(() {
+        tasks = 10;
+      });
+    }
   }
 
   _loadData() async {
@@ -364,44 +291,8 @@ class _HomePageState extends State<HomePage> {
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         this.setState(() {
           _data = json.decode(jsonFile.readAsStringSync());
-          _dataLength = _data.length;
+          _dataLength = _data!.length;
         });
-      }
-    });
-
-    //load watchedTutorial value
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = new File(dir.path + "/" + 'tutorial.json');
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        this.setState(() {
-          var w = json.decode(jsonFile.readAsStringSync());
-          watchedTutorial = w["watched"];
-          print(watchedTutorial);
-        });
-
-        if (watchedTutorial == false) {
-          _initTargets();
-          _showTutorial();
-        } else {
-          return;
-        }
-      } else {
-        File file = new File(dir.path + "/" + 'tutorial.json');
-        file.createSync();
-        fileExists = true;
-        var content = {"watched": false};
-        Map jsonFileContent = {};
-        jsonFileContent.addAll(content);
-        file.writeAsStringSync(json.encode(jsonFileContent));
-
-        if (watchedTutorial == false) {
-          _initTargets();
-          _showTutorial();
-        } else {
-          return;
-        }
       }
     });
   }
@@ -413,12 +304,12 @@ class _HomePageState extends State<HomePage> {
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         _data = json.decode(jsonFile.readAsStringSync());
-        _dataLength = _data.length;
+        _dataLength = _data!.length;
         double t = 0.0;
 
         this.setState(() {
           for (int i = 0; i < _dataLength; i++) {
-            double m = _data[i]["money"];
+            double m = _data![i]["money"];
             t += m;
             _total = t.toStringAsFixed(2);
           }
@@ -479,7 +370,9 @@ class _HomePageState extends State<HomePage> {
                             Text(
                               'Money value must be less than 100.000,00\$',
                             ),
-                            AppodealBanner(),
+                            const AppodealBanner(
+                              adSize: AppodealBannerSize.BANNER,
+                            ),
                           ],
                         ),
                         actions: [
@@ -557,6 +450,9 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
+    setState(() {
+      tasks -= 1;
+    });
     _watchAd();
   }
 
@@ -582,6 +478,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     _loadData();
+    setState(() {
+      tasks -= 1;
+    });
     _watchAd();
   }
 
@@ -700,7 +599,7 @@ class _HomePageState extends State<HomePage> {
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
         String name = n;
-        double money = jsonFileContent[index]["money"];
+        double? money = jsonFileContent[index]["money"];
         content = {"name": name, "money": money};
         jsonFileContent.insert(0, content);
         jsonFileContent.removeAt(index + 1);
@@ -710,6 +609,9 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
+    setState(() {
+      tasks -= 1;
+    });
     _watchAd();
   }
 
@@ -723,8 +625,8 @@ class _HomePageState extends State<HomePage> {
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        String name = jsonFileContent[index]["name"];
-        double money = jsonFileContent[index]["money"] + m;
+        String? name = jsonFileContent[index]["name"];
+        double? money = jsonFileContent[index]["money"] + m;
         content = {"name": name, "money": money};
         jsonFileContent.insert(0, content);
         jsonFileContent.removeAt(index + 1);
@@ -734,6 +636,9 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
+    setState(() {
+      tasks -= 1;
+    });
     _watchAd();
   }
 
@@ -747,8 +652,8 @@ class _HomePageState extends State<HomePage> {
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        String name = jsonFileContent[index]["name"];
-        double money = jsonFileContent[index]["money"] - m;
+        String? name = jsonFileContent[index]["name"];
+        double? money = jsonFileContent[index]["money"] - m;
         content = {"name": name, "money": money};
         jsonFileContent.insert(0, content);
         jsonFileContent.removeAt(index + 1);
@@ -758,6 +663,9 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
+    setState(() {
+      tasks -= 1;
+    });
     _watchAd();
   }
 
@@ -775,222 +683,9 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
-    _watchAd();
-  }
-
-  void _initTargets() {
-    targets.add(
-      TargetFocus(
-        identify: "Add Person",
-        keyTarget: keyButton1,
-        color: Colors.green[900],
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Container(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    "Add People",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 20.0),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10.0),
-                    child: Text(
-                      "Add a new person you owe money to by clicking this button. You are able to add a name and the money value.",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          )
-        ],
-        shape: ShapeLightFocus.RRect,
-        radius: 5,
-      ),
-    );
-    targets.add(
-      TargetFocus(
-        identify: "Change Username",
-        keyTarget: keyButton,
-        color: Colors.green[900],
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Container(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    "Edit your username",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 20.0),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10.0),
-                    child: Text(
-                      "By clicking this button you can change your username to your liking.",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          )
-        ],
-        shape: ShapeLightFocus.RRect,
-        radius: 5,
-      ),
-    );
-    targets.add(
-      TargetFocus(
-        identify: "Edit Person Name",
-        keyTarget: keyButton4,
-        color: Colors.green[900],
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Container(
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Text(
-                      "Edit Persons Info",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0),
-                    ),
-                  ),
-                  Text(
-                    "Here you can change the persons name and/or completely delete the persons info if needed.",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        shape: ShapeLightFocus.Circle,
-      ),
-    );
-    targets.add(
-      TargetFocus(
-        identify: "Edit Person Money",
-        keyTarget: keyButton3,
-        color: Colors.green[900],
-        contents: [
-          TargetContent(
-            align: ContentAlign.top,
-            child: Container(
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Text(
-                      "Edit Money You Owe",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0),
-                    ),
-                  ),
-                  Text(
-                    "By clicking this button you can edit the amount of money you owe. You can add money to the total you owe, or you can remove money from the total.",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        shape: ShapeLightFocus.Circle,
-      ),
-    );
-    targets.add(
-      TargetFocus(
-        identify: "Total Money",
-        keyTarget: keyButton2,
-        color: Colors.green[900],
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            child: Container(
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: Text(
-                      "Total Money You Owe",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0),
-                    ),
-                  ),
-                  Text(
-                    "Here you can see the total amount of money you owe.",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  Text(
-                    "Try to keep that low!",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        shape: ShapeLightFocus.Circle,
-      ),
-    );
-  }
-
-  tutorialCompleted() {
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = new File(dir.path + "/" + 'tutorial.json');
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        File file = new File(dir.path + "/" + 'tutorial.json');
-        var content = {"watched": true};
-        Map jsonFileContent = {};
-        jsonFileContent.addAll(content);
-        file.writeAsStringSync(json.encode(jsonFileContent));
-      }
+    setState(() {
+      tasks -= 1;
     });
-
-    _loadData();
-  }
-
-  void _showTutorial() {
-    tutorialCoachMark = TutorialCoachMark(
-      context,
-      targets: targets,
-      colorShadow: Colors.red,
-      textSkip: "SKIP",
-      paddingFocus: 10,
-      opacityShadow: 0.8,
-      onFinish: () {
-        tutorialCompleted();
-      },
-      onSkip: () {
-        //tutorialCompleted();
-      },
-    )..show();
+    _watchAd();
   }
 }

@@ -3,20 +3,19 @@ description: A new Flutter project.
 
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.2.0+3
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.0
-  appodeal_flutter: ^0.5.0
-  path_provider: ^2.0.1
-  flutter_launcher_icons: ^0.9.0
-  tutorial_coach_mark: ^0.6.0+1
+  cupertino_icons: ^1.0.5
+  path_provider: ^2.0.11
+  flutter_launcher_icons: ^0.9.3
+  stack_appodeal_flutter: ^3.0.0
   
 
 flutter_icons:
