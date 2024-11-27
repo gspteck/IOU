@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:convert';
@@ -12,20 +13,22 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomePage(),
+      home: _HomePage(),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
+class _HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<_HomePage> {
   TextEditingController usernameController = TextEditingController();
   TextEditingController nameController = TextEditingController();
   TextEditingController moneyController = TextEditingController();
@@ -34,7 +37,6 @@ class _HomePageState extends State<HomePage> {
 
   String? _username = '';
   String _total = '0.00';
-  int tasks = 0;
 
   List<dynamic>? _data = [];
   int _dataLength = 0;
@@ -46,6 +48,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     _init();
+    Timer.periodic(const Duration(seconds: 60), (t) {
+      _watchAd();
+    });
     super.initState();
   }
 
@@ -61,9 +66,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final _height =
+    final screenHeight =
         MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top;
-    final _width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return MaterialApp(
       title: 'IOU',
@@ -71,29 +76,33 @@ class _HomePageState extends State<HomePage> {
         body: Center(
           child: Column(
             children: [
-              Padding(padding: EdgeInsets.only(bottom: _height * 0.07)),
+              Padding(padding: EdgeInsets.only(bottom: screenHeight * 0.07)),
               Container(
-                width: _width * 0.85,
-                height: _width * 0.5,
+                width: screenWidth * 0.85,
+                height: screenWidth * 0.5,
                 decoration: BoxDecoration(
                   color: Colors.green,
                   borderRadius: BorderRadius.all(Radius.circular(20)),
                 ),
                 child: Column(
                   children: [
-                    Padding(padding: EdgeInsets.all(_width * 0.04)),
+                    Padding(padding: EdgeInsets.all(screenWidth * 0.04)),
                     Row(
                       children: [
-                        Padding(padding: EdgeInsets.only(right: _width * 0.07)),
+                        Padding(
+                            padding:
+                                EdgeInsets.only(right: screenWidth * 0.07)),
                         Container(
-                          width: _width * 0.15,
-                          height: _height * 0.05,
+                          width: screenWidth * 0.15,
+                          height: screenHeight * 0.05,
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.all(Radius.circular(20)),
                           ),
                         ),
-                        Padding(padding: EdgeInsets.only(right: _width * 0.01)),
+                        Padding(
+                            padding:
+                                EdgeInsets.only(right: screenWidth * 0.01)),
                         Transform.rotate(
                           angle: 90 * pi / 180,
                           child: Icon(
@@ -110,23 +119,26 @@ class _HomePageState extends State<HomePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Padding(padding: EdgeInsets.only(left: _width * 0.07)),
+                        Padding(
+                            padding: EdgeInsets.only(left: screenWidth * 0.07)),
                       ],
                     ),
                     Spacer(),
                     Row(
                       children: [
-                        Padding(padding: EdgeInsets.only(right: _width * 0.07)),
+                        Padding(
+                            padding:
+                                EdgeInsets.only(right: screenWidth * 0.07)),
                         Container(
-                          width: _width * 0.6,
+                          width: screenWidth * 0.6,
                           height: 50,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.all(Radius.circular(15)),
                           ),
                           child: SizedBox(
-                            width: _width * 0.6,
-                            height: _height * 0.1,
+                            width: screenWidth * 0.6,
+                            height: screenHeight * 0.1,
                             child: TextButton(
                               child: Text(
                                 '$_username',
@@ -144,24 +156,24 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
-                    Padding(padding: EdgeInsets.all(_width * 0.04)),
+                    Padding(padding: EdgeInsets.all(screenWidth * 0.04)),
                   ],
                 ),
               ),
-              Padding(padding: EdgeInsets.only(bottom: _height * 0.02)),
+              Padding(padding: EdgeInsets.only(bottom: screenHeight * 0.02)),
               Expanded(
                 child: ListView.builder(
                   itemCount: _dataLength,
                   itemBuilder: (BuildContext context, int i) {
                     return Padding(
                       padding: EdgeInsets.only(
-                        left: _width * 0.07,
-                        right: _width * 0.07,
-                        bottom: _height * 0.01,
+                        left: screenWidth * 0.07,
+                        right: screenWidth * 0.07,
+                        bottom: screenHeight * 0.01,
                       ),
                       child: Container(
-                        width: _width * 0.85,
-                        height: _height * 0.1,
+                        width: screenWidth * 0.85,
+                        height: screenHeight * 0.1,
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: Colors.green,
@@ -187,7 +199,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             Spacer(),
                             Container(
-                              height: _height * 0.08,
+                              height: screenHeight * 0.08,
                               decoration: BoxDecoration(
                                 color: Colors.green,
                                 borderRadius: BorderRadius.circular(15),
@@ -208,7 +220,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                             Padding(
-                              padding: EdgeInsets.only(left: _width * 0.01),
+                              padding:
+                                  EdgeInsets.only(left: screenWidth * 0.01),
                             ),
                           ],
                         ),
@@ -230,9 +243,7 @@ class _HomePageState extends State<HomePage> {
               size: 50,
             ),
             onPressed: () {
-              Future.delayed(const Duration(milliseconds: 1), () {
-                _addPerson();
-              });
+              _addPerson();
             },
           ),
         ),
@@ -250,34 +261,28 @@ class _HomePageState extends State<HomePage> {
         AppodealAdType.MREC
       ],
     );
-    Future.delayed(const Duration(seconds: 10), _watchAd());
 
     _loadData();
     _loadTotal();
   }
 
   _watchAd() {
-    if (tasks <= 0) {
-      Appodeal.show(AppodealAdType.Interstitial);
-      setState(() {
-        tasks = 10;
-      });
-    }
+    Appodeal.show(AppodealAdType.Interstitial);
   }
 
   _loadData() async {
     //load username from username.json
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'username.json');
+      jsonFile = File("${dir.path}/username.json");
       fileExists = jsonFile.existsSync();
       if (fileExists) {
-        this.setState(() {
+        setState(() {
           var u = json.decode(jsonFile.readAsStringSync());
           _username = u["username"];
         });
       } else {
-        this.setState(() {
+        setState(() {
           _username = 'John Doe';
         });
       }
@@ -286,10 +291,10 @@ class _HomePageState extends State<HomePage> {
     //load people from people.json
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        this.setState(() {
+        setState(() {
           _data = json.decode(jsonFile.readAsStringSync());
           _dataLength = _data!.length;
         });
@@ -300,14 +305,14 @@ class _HomePageState extends State<HomePage> {
   _loadTotal() async {
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         _data = json.decode(jsonFile.readAsStringSync());
         _dataLength = _data!.length;
         double t = 0.0;
 
-        this.setState(() {
+        setState(() {
           for (int i = 0; i < _dataLength; i++) {
             double m = _data![i]["money"];
             t += m;
@@ -432,14 +437,14 @@ class _HomePageState extends State<HomePage> {
 
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
         jsonFileContent.insert(0, content);
         jsonFile.writeAsStringSync(json.encode(jsonFileContent));
       } else {
-        File file = new File(dir.path + "/" + 'people.json');
+        File file = File("${dir.path}/people.json");
         file.createSync();
         fileExists = true;
         List<Map<String, dynamic>> jsonFileContent = [];
@@ -450,10 +455,6 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
-    setState(() {
-      tasks -= 1;
-    });
-    _watchAd();
   }
 
   _saveUsername(username) async {
@@ -461,7 +462,7 @@ class _HomePageState extends State<HomePage> {
 
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'username.json');
+      jsonFile = File("${dir.path}/username.json");
       fileExists = jsonFile.existsSync();
       if (fileExists) {
         Map<String, dynamic> jsonFileContent = json.decode(
@@ -470,7 +471,7 @@ class _HomePageState extends State<HomePage> {
         jsonFileContent.addAll(content);
         jsonFile.writeAsStringSync(json.encode(jsonFileContent));
       } else {
-        File file = new File(dir.path + "/" + 'username.json');
+        File file = File("${dir.path}/username.json");
         file.createSync();
         fileExists = true;
         file.writeAsStringSync(json.encode(content));
@@ -478,10 +479,6 @@ class _HomePageState extends State<HomePage> {
     });
 
     _loadData();
-    setState(() {
-      tasks -= 1;
-    });
-    _watchAd();
   }
 
   _editName(index) {
@@ -594,7 +591,7 @@ class _HomePageState extends State<HomePage> {
 
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
@@ -609,10 +606,6 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
-    setState(() {
-      tasks -= 1;
-    });
-    _watchAd();
   }
 
   _saveAddMoney(index) {
@@ -621,7 +614,7 @@ class _HomePageState extends State<HomePage> {
 
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
@@ -636,10 +629,6 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
-    setState(() {
-      tasks -= 1;
-    });
-    _watchAd();
   }
 
   _saveRemoveMoney(index) {
@@ -648,7 +637,7 @@ class _HomePageState extends State<HomePage> {
 
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
@@ -663,16 +652,12 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
-    setState(() {
-      tasks -= 1;
-    });
-    _watchAd();
   }
 
   _deletePerson(index) {
     getApplicationDocumentsDirectory().then((Directory directory) {
       dir = directory;
-      jsonFile = new File(dir.path + "/" + 'people.json');
+      jsonFile = File("${dir.path}/people.json");
       fileExists = jsonFile.existsSync();
       if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
         List jsonFileContent = json.decode(jsonFile.readAsStringSync());
@@ -683,9 +668,5 @@ class _HomePageState extends State<HomePage> {
 
     _loadData();
     _loadTotal();
-    setState(() {
-      tasks -= 1;
-    });
-    _watchAd();
   }
 }
