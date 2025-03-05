@@ -39,3 +39,11 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+
+
+
+# Personal
+lib/auth/
+
+android/key.properties

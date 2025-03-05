@@ -1,15 +1,31 @@
+// dart packages
 import 'dart:async';
-import 'dart:io';
-import 'dart:math';
 import 'dart:convert';
 
+// flutter packages
 import 'package:flutter/material.dart';
 
-import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
-import 'package:path_provider/path_provider.dart';
+// third-party packages
+import 'package:intl/intl.dart';
+import 'package:feedback/feedback.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(MyApp());
+// project packages
+import 'package:iou/colors.dart';
+
+import 'package:iou/elements/add_button.dart';
+import 'package:iou/elements/money_box.dart';
+import 'package:iou/elements/transaction_box.dart';
+
+import 'package:iou/services/feedback.dart';
+
+void main() async {
+ 	runApp(
+    BetterFeedback(
+      child: const MyApp(),
+    ),
+  ); 
 }
 
 class MyApp extends StatelessWidget {
@@ -18,655 +34,362 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: _HomePage(),
+      home: const MyHomePage(),
     );
   }
 }
 
-class _HomePage extends StatefulWidget {
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
-  _HomePageState createState() => _HomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _HomePageState extends State<_HomePage> {
-  TextEditingController usernameController = TextEditingController();
-  TextEditingController nameController = TextEditingController();
-  TextEditingController moneyController = TextEditingController();
-  TextEditingController nameEditController = TextEditingController();
-  TextEditingController moneyEditController = TextEditingController();
+class _MyHomePageState extends State<MyHomePage> {
+	final numberFormat = NumberFormat("###,###,###.##", "tr_TR"); 
 
-  String? _username = '';
-  String _total = '0.00';
+	TextEditingController usernameTextEditingController = TextEditingController();
+	String username = "John Doe";
+	bool editingUsername = false;
 
-  List<dynamic>? _data = [];
-  int _dataLength = 0;
+	double totalOwed = 0;
+	String totalOwedInt = "";
+	String totalOwedDec = "";
 
-  late File jsonFile;
-  late Directory dir;
-  bool fileExists = false;
+	Map<String, dynamic> moneyData = {
+  	"data": [],
+	};
+	Map<String, dynamic> transactionData = {
+		"data": [],
+	};
+	
 
-  @override
-  void initState() {
-    _init();
-    Timer.periodic(const Duration(seconds: 60), (t) {
-      _watchAd();
-    });
-    super.initState();
-  }
+	@override
+	void initState() {	
+		super.initState();
+		loadData();
+		Timer.periodic(const Duration(milliseconds: 300), (t) async {
+			loadData();
+		});
+	}
 
-  @override
-  void dispose() {
-    usernameController.dispose();
-    nameController.dispose();
-    moneyController.dispose();
-    nameEditController.dispose();
-    moneyEditController.dispose();
-    super.dispose();
-  }
+	@override
+	void dispose() {
+		usernameTextEditingController.text;
+		super.dispose();
+	}
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight =
-        MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top;
+		final topPaddingHeight = MediaQuery.of(context).padding.top;
+    final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenAvrg = (screenWidth/9 + screenHeight/16)/2;
 
-    return MaterialApp(
-      title: 'IOU',
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            children: [
-              Padding(padding: EdgeInsets.only(bottom: screenHeight * 0.07)),
-              Container(
-                width: screenWidth * 0.85,
-                height: screenWidth * 0.5,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                ),
-                child: Column(
-                  children: [
-                    Padding(padding: EdgeInsets.all(screenWidth * 0.04)),
-                    Row(
-                      children: [
-                        Padding(
-                            padding:
-                                EdgeInsets.only(right: screenWidth * 0.07)),
-                        Container(
-                          width: screenWidth * 0.15,
-                          height: screenHeight * 0.05,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                          ),
-                        ),
-                        Padding(
-                            padding:
-                                EdgeInsets.only(right: screenWidth * 0.01)),
-                        Transform.rotate(
-                          angle: 90 * pi / 180,
-                          child: Icon(
-                            Icons.wifi_rounded,
-                            size: 40,
-                          ),
-                        ),
-                        Spacer(),
-                        Text(
-                          '$_total\$',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Padding(
-                            padding: EdgeInsets.only(left: screenWidth * 0.07)),
-                      ],
-                    ),
-                    Spacer(),
-                    Row(
-                      children: [
-                        Padding(
-                            padding:
-                                EdgeInsets.only(right: screenWidth * 0.07)),
-                        Container(
-                          width: screenWidth * 0.6,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.all(Radius.circular(15)),
-                          ),
-                          child: SizedBox(
-                            width: screenWidth * 0.6,
-                            height: screenHeight * 0.1,
-                            child: TextButton(
-                              child: Text(
-                                '$_username',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              onPressed: () {
-                                _changeUsername();
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Padding(padding: EdgeInsets.all(screenWidth * 0.04)),
-                  ],
-                ),
-              ),
-              Padding(padding: EdgeInsets.only(bottom: screenHeight * 0.02)),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _dataLength,
-                  itemBuilder: (BuildContext context, int i) {
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        left: screenWidth * 0.07,
-                        right: screenWidth * 0.07,
-                        bottom: screenHeight * 0.01,
-                      ),
-                      child: Container(
-                        width: screenWidth * 0.85,
-                        height: screenHeight * 0.1,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.green,
-                            width: 3,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            TextButton(
-                              child: Text(
-                                '${_data![i]["name"]}',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 25,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              onPressed: () {
-                                int index = i;
-                                _editName(index);
-                              },
-                            ),
-                            Spacer(),
-                            Container(
-                              height: screenHeight * 0.08,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: TextButton(
-                                child: Text(
-                                  '${_data![i]["money"]}\$',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 25,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                onPressed: () {
-                                  int index = i;
-                                  _editMoney(index);
-                                },
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  EdgeInsets.only(left: screenWidth * 0.01),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: Container(
-          height: 75,
-          decoration: BoxDecoration(color: Colors.green),
-          child: TextButton(
-            child: Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 50,
-            ),
-            onPressed: () {
-              _addPerson();
-            },
-          ),
-        ),
-      ),
+    return Scaffold(
+			backgroundColor: mainColor,
+      body: Center(
+        child: SingleChildScrollView(
+    			child: Column(children: [
+						// Top White Section
+						Container(
+							width: screenWidth,
+							height: screenHeight * 0.4,
+							decoration: BoxDecoration(
+								color: backgroundColor,
+								borderRadius: BorderRadius.only(
+									bottomLeft: Radius.circular(35),
+									bottomRight: Radius.circular(35),
+								),
+							),
+							child: Column(
+								mainAxisAlignment: MainAxisAlignment.center,
+								children: [
+									Padding(padding: EdgeInsets.only(bottom: topPaddingHeight + screenHeight * 0.04)),
+									Row(children: [
+										Padding(padding: EdgeInsets.only(right: screenWidth * 0.1)),
+										!editingUsername
+											? Text(
+												"Hi, $username.",
+												style: GoogleFonts.bebasNeue(
+													fontSize: 
+													20,
+													fontWeight: FontWeight.bold,
+												),
+											)
+											: SizedBox(
+												width: screenWidth * 0.4,
+												child: TextField(
+													controller: usernameTextEditingController,	
+													decoration: InputDecoration(
+														hintText: "Username",
+														hintStyle: GoogleFonts.bebasNeue(color: whiteTextColor),
+													),
+												),
+											), 
+									  IconButton(
+											onPressed: () {
+												if (!editingUsername) {
+													setState(() {
+														editingUsername = true;
+													});
+												} else {
+													editUsername();	
+												}
+											},
+											icon: Icon(
+											 !editingUsername ?	Icons.edit : Icons.check,
+												size: 15,
+												color: darkTextColor,
+											),
+										),	
+										const Spacer(),
+										IconButton(
+											onPressed: () {
+												FeedbackServices fs = FeedbackServices();
+												fs.sendFeedback(context);																		},
+											icon: Icon(
+												Icons.bug_report,	
+												color: darkTextColor,
+											),
+										),
+										Padding(padding: EdgeInsets.only(left: screenWidth * 0.07)),
+									]),
+
+									Padding(padding: EdgeInsets.only(bottom: screenHeight * 0.01)),
+									Row(children: [
+										Padding(padding: EdgeInsets.only(right: screenWidth * 0.07)),
+										Column(children: [
+											SizedBox(
+												width: screenWidth * 0.8,
+												child: Text(
+													"Total Owed",
+													style:GoogleFonts.bebasNeue( 
+														fontSize: 30,	
+														color: lightTextColor,
+													),	
+												),
+											),
+											SizedBox(
+												width: screenWidth * 0.8,
+												child: RichText(
+													text: TextSpan(
+														text: "\$$totalOwedInt",
+														style: GoogleFonts.bebasNeue(
+															fontSize: 55,
+															fontWeight: FontWeight.bold,
+															color: darkTextColor,
+														),
+														children: <TextSpan>[
+															TextSpan(
+																text: ",$totalOwedDec",
+																style: TextStyle(
+																	fontSize: 45,
+																	fontWeight: FontWeight.bold,
+																	color: lightTextColor,	
+																),
+															),	
+														],
+													),
+												),	
+											),
+										]),
+										const Spacer(),
+									]),
+
+									Container(
+										width: screenWidth * 0.86,
+										height: 25,	
+										decoration: BoxDecoration(
+											borderRadius: BorderRadius.all(Radius.circular(35)),
+											color: yellowDetailColor,
+										),
+									),
+									const  Spacer(),
+								],
+							),
+						),
+
+						// Bottom Elements
+						Padding(padding: EdgeInsets.only(bottom: 10)),
+						Text(
+							"T I M E   T O   P A Y   Y O U R   D U E S !",
+							style: GoogleFonts.bebasNeue(
+								fontSize: 20,
+								color: whiteTextColor,
+							),
+						),
+						Padding(padding: EdgeInsets.only(bottom: 20)),
+						moneyData["data"].isNotEmpty
+							? SizedBox(
+								height: 200,	
+								child: ListView.builder(
+									shrinkWrap: true,
+									scrollDirection: Axis.horizontal,
+									itemCount: moneyData["data"].length + 1,
+									itemBuilder: (BuildContext context, int index) {
+										return Padding(
+											padding: EdgeInsets.only(
+												left: index == 0 ? 25 : 10,
+												top: 3,
+												right: index == moneyData["data"].length ? 25 : 10,
+												bottom: 3,
+											),
+											child: index == 0
+												? AddButton()
+												: MoneyBox(
+														index: index - 1,
+														bgColor: moneyBoxColors[moneyData["data"][index - 1]["colorIndex"]],
+														name: moneyData["data"][index - 1]["name"],
+														money: moneyData["data"][index - 1]["money"],
+														percentage: (
+															moneyData["data"][index - 1]["money"] / totalOwed * 100
+														).toInt(),
+													),
+										);
+									}
+								),
+							)
+							: Row(children: [
+								Padding(padding: EdgeInsets.only(right: 25)),
+								AddButton(),
+								const Spacer(),
+							]),
+
+						// Transactions
+						Padding(padding: EdgeInsets.only(bottom: 30)),
+						Row(children: [
+							Padding(padding: EdgeInsets.only(right: screenWidth * 0.1)),
+							RichText(
+								text: TextSpan(
+									text: "Transactions ",
+									style: GoogleFonts.bebasNeue(
+										fontSize: 30,	
+										color: whiteTextColor,
+									),
+									children: <TextSpan>[
+										TextSpan(
+											text: " (last 10)",
+											style: TextStyle(
+												fontSize: 20,
+												fontWeight: FontWeight.bold,
+												color: whiteTextColor,	
+											),
+										),	
+									],
+								),
+							),
+							const Spacer(),
+						]),
+
+						transactionData["data"].isNotEmpty
+							? SizedBox(
+								height: 10 * 100,	
+								child: ListView.builder(
+									shrinkWrap: true,
+									scrollDirection: Axis.vertical,
+									physics: const NeverScrollableScrollPhysics(),
+									itemCount: transactionData["data"].length > 10
+										? 10
+										: transactionData["data"].length,
+									itemBuilder: (BuildContext context, int index) {
+										return Padding(
+											padding: EdgeInsets.only(
+												left: 25,
+												top: 7,
+												right: 25,
+												bottom: 7,
+											),
+											child: transactionData["data"][index].isNotEmpty
+												? TransactionBox(
+													name: transactionData["data"][transactionData["data"].length - 1 - index]["name"],
+													adding: transactionData["data"][transactionData["data"].length - 1 - index]["adding"],
+													money: transactionData["data"][transactionData["data"].length - 1 - index]["money"].toStringAsFixed(2),
+												
+												)
+												: SizedBox(height: 0,),
+										);
+									}
+								),
+							)
+									: SizedBox(
+										height: 500,
+									),	
+					]),
+      	),
+			),
     );
   }
 
-  _init() async {
-    Appodeal.initialize(
-      appKey: "d44844485ed9327b1faf7321ccb7e12fb4e4773bdaed80a1",
-      adTypes: [
-        AppodealAdType.Interstitial,
-        AppodealAdType.RewardedVideo,
-        AppodealAdType.Banner,
-        AppodealAdType.MREC
-      ],
-    );
+	loadData() async {
+		final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    _loadData();
-    _loadTotal();
-  }
+		//prefs.remove("moneydata");
 
-  _watchAd() {
-    Appodeal.show(AppodealAdType.Interstitial);
-  }
+		// Get Username
+		String u = prefs.getString("username") ?? "John Doe";
+		setState(() {
+			username = u;
+		});
 
-  _loadData() async {
-    //load username from username.json
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/username.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists) {
-        setState(() {
-          var u = json.decode(jsonFile.readAsStringSync());
-          _username = u["username"];
-        });
-      } else {
-        setState(() {
-          _username = 'John Doe';
-        });
-      }
-    });
+		// Get Money Data
+		String moneyDataString = prefs.getString("moneydata") ?? '{"data":[]}';
+		Map<String, dynamic> moneyDataMap = jsonDecode(moneyDataString);	
+		setState(() {
+			moneyData = moneyDataMap;
+		});
 
-    //load people from people.json
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        setState(() {
-          _data = json.decode(jsonFile.readAsStringSync());
-          _dataLength = _data!.length;
-        });
-      }
-    });
-  }
+		// Get Total Money Owed
+		if (moneyData["data"].isNotEmpty) {
+			double tot = 0;
+			for(int i = 0; i < moneyData["data"].length; i++) {
+				tot += moneyData["data"][i]["money"];
+			}
+			setState(() {
+				totalOwed = tot;
+			});
 
-  _loadTotal() async {
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        _data = json.decode(jsonFile.readAsStringSync());
-        _dataLength = _data!.length;
-        double t = 0.0;
+			String formattedTotalOwed = numberFormat.format(
+				double.parse(
+					totalOwed.toStringAsFixed(2),
+				),
+			);
+			final moneySplit = formattedTotalOwed.split(',');
+			if (moneySplit.length == 2) {
+				setState(() {
+					totalOwedInt = moneySplit[0];
+					totalOwedDec = moneySplit[1];
+				});
+			} else {
+				setState(() {
+					totalOwedInt = moneySplit[0];
+					totalOwedDec = "00";
+				});
+			}
+		} else {
+			setState(() {
+				totalOwedInt = "0";
+				totalOwedDec = "00";
+			});
+		}
 
-        setState(() {
-          for (int i = 0; i < _dataLength; i++) {
-            double m = _data![i]["money"];
-            t += m;
-            _total = t.toStringAsFixed(2);
-          }
-        });
-      }
-    });
-  }
+		// Get Transaction Data
+		String transactionDataString = prefs.getString("transactiondata") ?? '{"data":[]}';
+		Map<String, dynamic> transactionDataMap = jsonDecode(transactionDataString);	
+		setState(() {
+			transactionData = transactionDataMap;
+		});
+	}
 
-  _addPerson() {
-    return showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                maxLength: 8,
-                decoration: InputDecoration(
-                  labelText: 'Name (eg.: John):',
-                ),
-                controller: nameController,
-              ),
-              TextField(
-                keyboardType: TextInputType.number,
-                maxLength: 8,
-                decoration: InputDecoration(
-                  labelText: 'Money (eg.: 200.00):',
-                ),
-                controller: moneyController,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text("CANCEL", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: Text("ADD", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                String name = nameController.text;
-                double money = double.parse(moneyController.text);
+	editUsername() async {
+		final SharedPreferences prefs = await SharedPreferences.getInstance();
+		await prefs.setString("username", usernameTextEditingController.text);
 
-                if (money < 100000.00) {
-                  Navigator.pop(context);
-                  _savePerson(name, money);
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Money value must be less than 100.000,00\$',
-                            ),
-                            const AppodealBanner(
-                              adSize: AppodealBannerSize.BANNER,
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            child: Text("OK",
-                                style: TextStyle(color: Colors.black)),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  _changeUsername() {
-    return showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Change your username"),
-          content: TextField(
-            maxLength: 15,
-            controller: usernameController,
-          ),
-          actions: [
-            TextButton(
-              child: Text("CANCEL", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: Text("CHANGE", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                Navigator.pop(context);
-                String username = usernameController.text;
-                _saveUsername(username);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  _savePerson(name, money) async {
-    Map<String, dynamic> content = {"name": name, "money": money};
-
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        jsonFileContent.insert(0, content);
-        jsonFile.writeAsStringSync(json.encode(jsonFileContent));
-      } else {
-        File file = File("${dir.path}/people.json");
-        file.createSync();
-        fileExists = true;
-        List<Map<String, dynamic>> jsonFileContent = [];
-        jsonFileContent.insert(0, content);
-        file.writeAsStringSync(json.encode(jsonFileContent));
-      }
-    });
-
-    _loadData();
-    _loadTotal();
-  }
-
-  _saveUsername(username) async {
-    Map<String, dynamic> content = {"username": username};
-
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/username.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists) {
-        Map<String, dynamic> jsonFileContent = json.decode(
-          jsonFile.readAsStringSync(),
-        );
-        jsonFileContent.addAll(content);
-        jsonFile.writeAsStringSync(json.encode(jsonFileContent));
-      } else {
-        File file = File("${dir.path}/username.json");
-        file.createSync();
-        fileExists = true;
-        file.writeAsStringSync(json.encode(content));
-      }
-    });
-
-    _loadData();
-  }
-
-  _editName(index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                maxLength: 8,
-                decoration: InputDecoration(
-                  labelText: 'Name (eg.: John):',
-                ),
-                controller: nameEditController,
-              ),
-            ],
-          ),
-          actions: [
-            Column(
-              children: [
-                TextButton(
-                  child: Text(
-                    "DELETE PERSON",
-                    style: TextStyle(
-                      color: Colors.red[900],
-                    ),
-                  ),
-                  onPressed: () {
-                    _deletePerson(index);
-                    Navigator.pop(context);
-                  },
-                ),
-                Row(
-                  children: [
-                    TextButton(
-                      child:
-                          Text("CANCEL", style: TextStyle(color: Colors.black)),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    TextButton(
-                      child:
-                          Text("CHANGE", style: TextStyle(color: Colors.black)),
-                      onPressed: () {
-                        _saveName(index);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  _editMoney(index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                keyboardType: TextInputType.number,
-                maxLength: 8,
-                decoration: InputDecoration(
-                  labelText: 'Money (eg.: 200.00):',
-                ),
-                controller: moneyEditController,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text("CANCEL", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            TextButton(
-              child: Text("REMOVE", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                Navigator.pop(context);
-                _saveRemoveMoney(index);
-              },
-            ),
-            TextButton(
-              child: Text("ADD", style: TextStyle(color: Colors.black)),
-              onPressed: () {
-                Navigator.pop(context);
-                _saveAddMoney(index);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  _saveName(index) {
-    String n = nameEditController.text;
-    Map<String, dynamic> content = {};
-
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        String name = n;
-        double? money = jsonFileContent[index]["money"];
-        content = {"name": name, "money": money};
-        jsonFileContent.insert(0, content);
-        jsonFileContent.removeAt(index + 1);
-        jsonFile.writeAsStringSync(json.encode(jsonFileContent));
-      }
-    });
-
-    _loadData();
-    _loadTotal();
-  }
-
-  _saveAddMoney(index) {
-    double m = double.parse(moneyEditController.text);
-    Map<String, dynamic> content = {};
-
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        String? name = jsonFileContent[index]["name"];
-        double? money = jsonFileContent[index]["money"] + m;
-        content = {"name": name, "money": money};
-        jsonFileContent.insert(0, content);
-        jsonFileContent.removeAt(index + 1);
-        jsonFile.writeAsStringSync(json.encode(jsonFileContent));
-      }
-    });
-
-    _loadData();
-    _loadTotal();
-  }
-
-  _saveRemoveMoney(index) {
-    double m = double.parse(moneyEditController.text);
-    Map<String, dynamic> content = {};
-
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        String? name = jsonFileContent[index]["name"];
-        double? money = jsonFileContent[index]["money"] - m;
-        content = {"name": name, "money": money};
-        jsonFileContent.insert(0, content);
-        jsonFileContent.removeAt(index + 1);
-        jsonFile.writeAsStringSync(json.encode(jsonFileContent));
-      }
-    });
-
-    _loadData();
-    _loadTotal();
-  }
-
-  _deletePerson(index) {
-    getApplicationDocumentsDirectory().then((Directory directory) {
-      dir = directory;
-      jsonFile = File("${dir.path}/people.json");
-      fileExists = jsonFile.existsSync();
-      if (fileExists && jsonFile.readAsStringSync().isNotEmpty) {
-        List jsonFileContent = json.decode(jsonFile.readAsStringSync());
-        jsonFileContent.removeAt(index);
-        jsonFile.writeAsStringSync(json.encode(jsonFileContent));
-      }
-    });
-
-    _loadData();
-    _loadTotal();
-  }
+		setState(() {
+			username = usernameTextEditingController.text;
+			editingUsername = false;
+		});
+	}
 }
+
