@@ -19,6 +19,7 @@ import 'package:iou/elements/money_box.dart';
 import 'package:iou/elements/transaction_box.dart';
 
 import 'package:iou/services/feedback.dart';
+import 'package:iou/services/appodeal.dart';
 
 void main() async {
  	runApp(
@@ -68,6 +69,10 @@ class _MyHomePageState extends State<MyHomePage> {
 	@override
 	void initState() {	
 		super.initState();
+
+		AppodealServices as = AppodealServices();
+		as.init();
+
 		loadData();
 		Timer.periodic(const Duration(milliseconds: 300), (t) async {
 			loadData();

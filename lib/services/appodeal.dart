@@ -1,9 +1,11 @@
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 
+import 'package:iou/auth/secrets.dart';
+
 class AppodealServices {
 	init() async {
 		Appodeal.initialize(
-    appKey: "YOUR_APPODEAL_APP_KEY",
+    appKey: appodealID,
     adTypes: [
       AppodealAdType.Interstitial, 
       AppodealAdType.Banner,

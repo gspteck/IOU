@@ -14,6 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 // project packages
 import 'package:iou/colors.dart';
 
+import 'package:iou/services/appodeal.dart';
+
 class AddButton extends StatefulWidget {
   const AddButton({super.key});
 
@@ -169,5 +171,8 @@ class _AddButtonState extends State<AddButton> {
 			nameTextEditingController.text = "";
 			moneyTextEditingController.text = "";
 		});
+
+		AppodealServices as = AppodealServices();
+		as.showInterstitial();
 	}
 }
