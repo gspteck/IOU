@@ -1,0 +1,79 @@
+PODS:
+  - APDIABAdapter (3.12.0.0):
+    - Appodeal (= 3.12.0)
+    - StackModules (= 3.4.1)
+  - Appodeal (3.12.0):
+    - Protobuf (= 3.29.3)
+    - StackConsentManager (= 3.0.0)
+    - StackModules (= 3.4.1)
+  - Flutter (1.0.0)
+  - flutter_email_sender (0.0.1):
+    - Flutter
+  - GoogleUserMessagingPlatform (2.7.0)
+  - OMSDK_Appodeal (1.5.2)
+  - Protobuf (3.29.3)
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - stack_appodeal_flutter (3.12.0):
+    - APDIABAdapter (= 3.12.0.0)
+    - Appodeal (= 3.12.0)
+    - Flutter
+  - StackConsentManager (3.0.0):
+    - GoogleUserMessagingPlatform (~> 2.1)
+  - StackModules (3.4.1):
+    - StackModules/Static (= 3.4.1)
+  - StackModules/Core-Static (3.4.1)
+  - StackModules/ProductPresentation-Static (3.4.1):
+    - StackModules/Core-Static
+  - StackModules/Rendering-Static (3.4.1):
+    - OMSDK_Appodeal (= 1.5.2)
+    - StackModules/Core-Static
+    - StackModules/ProductPresentation-Static
+  - StackModules/Static (3.4.1):
+    - StackModules/Core-Static
+    - StackModules/ProductPresentation-Static
+    - StackModules/Rendering-Static
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_email_sender (from `.symlinks/plugins/flutter_email_sender/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - stack_appodeal_flutter (from `.symlinks/plugins/stack_appodeal_flutter/ios`)
+
+SPEC REPOS:
+  trunk:
+    - APDIABAdapter
+    - Appodeal
+    - GoogleUserMessagingPlatform
+    - OMSDK_Appodeal
+    - Protobuf
+    - StackConsentManager
+    - StackModules
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_email_sender:
+    :path: ".symlinks/plugins/flutter_email_sender/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  stack_appodeal_flutter:
+    :path: ".symlinks/plugins/stack_appodeal_flutter/ios"
+
+SPEC CHECKSUMS:
+  APDIABAdapter: 89f412ae566b6f6a97a6913b1f3e3801b0e13bc1
+  Appodeal: fd232509fb6221bd1999b1390ea8ede08b679ba8
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_email_sender: aa1e9772696691d02cd91fea829856c11efb8e58
+  GoogleUserMessagingPlatform: a8b56893477f67212fbc8411c139e61d463349f5
+  OMSDK_Appodeal: 066f9da2c77d560e319341c6bd4739828bc65842
+  Protobuf: e2de96d939c642ce8da186343ff8929b35223212
+  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  stack_appodeal_flutter: 034fb24bc6b3915a27afb41e1bf415e7830386ad
+  StackConsentManager: 80684e96361f88476985a2ed91a9299bc9196be8
+  StackModules: 2cdc4fe670b6536c8024c4ae24d4c2c76dc15006
+
+PODFILE CHECKSUM: e30f02f9d1c72c47bb6344a0a748c9d268180865
+
+COCOAPODS: 1.16.2
