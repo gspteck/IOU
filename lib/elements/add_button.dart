@@ -52,11 +52,12 @@ class _AddButtonState extends State<AddButton> {
 				} 
 			},
 			child: DottedBorder(
-				borderType: BorderType.RRect,
-				radius: Radius.circular(50),	
-				color: lightTextColor,
-				strokeWidth: 2,
-				dashPattern: [5, 5],	
+				options: RoundedRectDottedBorderOptions(
+          radius: const Radius.circular(50),
+          color: lightTextColor,
+          strokeWidth: 2,
+          dashPattern: const [5, 5],
+        ),	
 				child: AnimatedContainer(
 					duration: const Duration(milliseconds: 500),
 					width: !open ? 75 : screenWidth - 49,
