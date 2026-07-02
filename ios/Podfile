@@ -126,10 +126,34 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  excluded_archs_key = 'EXCLUDED_ARCHS[sdk=iphonesimulator*]'
+  excluded_archs_value = 'i386'
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      config.build_settings.delete(excluded_archs_key)
+
+      xcconfig_path = config.base_configuration_reference&.real_path
+      next unless xcconfig_path && File.exist?(xcconfig_path)
+
+      xcconfig = File.read(xcconfig_path)
+      updated = xcconfig.gsub(/EXCLUDED_ARCHS\[sdk=iphonesimulator\*\] = .*\n/, '')
+      File.write(xcconfig_path, updated) if updated != xcconfig
     end
+  end
+
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings[excluded_archs_key] = excluded_archs_value
+  end
+
+  installer.aggregate_targets.each do |aggregate_target|
+    aggregate_target.user_project.native_targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings[excluded_archs_key] = excluded_archs_value
+      end
+    end
+    aggregate_target.user_project.save
   end
 end
