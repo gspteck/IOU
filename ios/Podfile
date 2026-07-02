@@ -28,7 +28,8 @@ flutter_ios_podfile_setup
 
 install! 'cocoapods', :warn_for_multiple_pod_sources => false
 
-source 'https://cdn.cocoapods.org'
+# Use git specs instead of CDN to avoid intermittent HTTP2 framing errors.
+source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/appodeal/CocoaPods.git'
 source 'https://github.com/bidon-io/CocoaPods-Specs.git'
 
