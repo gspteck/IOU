@@ -43,6 +43,9 @@ app.*.map.json
 
 
 
+# Local terminal session logs
+terminals/
+
 # Personal
 lib/auth/
 

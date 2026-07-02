@@ -13,9 +13,9 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  stack_appodeal_flutter: ^3.5.2
+  stack_appodeal_flutter: ^4.2.0
   feedback: ^3.1.0
-  flutter_email_sender: ^8.0.0
+  flutter_email_sender: ^10.0.1
   path_provider: ^2.1.5
   google_fonts: ^8.0.2
   dotted_border: ^3.1.0
