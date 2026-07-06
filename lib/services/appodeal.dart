@@ -3,17 +3,17 @@ import 'dart:io';
 
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 
-import 'package:iou/auth/secrets.dart';
+import 'package:iou/auth/secrets.dart' as secrets;
 
 class AppodealServices {
   Future<void> init() async {
     bool isAmazonBuild = false;
-    String appodealID = appodealAndroidId;
+    String appodealID = secrets.appodealAndroidId;
 
     if (Platform.isIOS) {
-      appodealID = appodealIosId;
+      appodealID = secrets.appodealIosId;
     } else if (isAmazonBuild) {
-      appodealID = appodealAmazonId;
+      appodealID = secrets.appodealAmazonId;
     }
 
     final initialization = Completer<void>();
