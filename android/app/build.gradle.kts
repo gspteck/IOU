@@ -1,11 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-repositories {
-    google()
-    mavenCentral()
-}
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -24,7 +19,7 @@ val keystoreProperties = Properties().apply {
 android {
     namespace = "com.gspteck.iou"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973" 
+    ndkVersion = "28.2.13676358" 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -69,18 +64,4 @@ flutter {
 dependencies {
 		// Firebase Dependencies
 		implementation("com.google.firebase:firebase-bom:33.9.0")
-
-		implementation("com.appodeal.ads:sdk:3.7.0.0") {
-        // Ad networks
-        exclude(group = "com.appodeal.ads.sdk.networks", module = "admob")
-        exclude(group = "org.bidon", module = "admob-adapter")
-        exclude(group = "org.bidon", module = "gam-adapter")
-        exclude(group = "com.applovin.mediation", module = "google-adapter")
-        exclude(group = "com.applovin.mediation", module = "google-ad-manager-adapter")
-        // Services
-        exclude(group = "com.appodeal.ads.sdk.services", module = "adjust")
-        exclude(group = "com.appodeal.ads.sdk.services", module = "appsflyer")
-        exclude(group = "com.appodeal.ads.sdk.services", module = "firebase")
-        exclude(group = "com.appodeal.ads.sdk.services", module = "facebook_analytics")
-    }	
 }
