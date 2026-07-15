@@ -50,3 +50,7 @@ terminals/
 lib/auth/
 
 android/key.properties
+
+# Environment secrets (RevenueCat keys, etc.)
+.env
+.env.*

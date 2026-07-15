@@ -1,0 +1,28 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+
+        "iou": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid",
+
+          "lastLogin": { ".validate": "newData.isNumber()" },
+          "lastCheckin": { ".validate": "newData.isNumber()" },
+          "adFreeStatus": { ".validate": "newData.isBoolean()" },
+          "adFreeStatusTime": { ".validate": "newData.isNumber()" }
+        }
+      }
+    },
+
+    "iou": {
+      ".read": "auth != null",
+      ".write": "false"
+    }
+  }
+}

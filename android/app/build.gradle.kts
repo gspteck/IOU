@@ -1,9 +1,17 @@
 import java.io.FileInputStream
 import java.util.Properties
 
+repositories {
+    google()
+    mavenCentral()
+}
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -59,6 +67,9 @@ flutter {
 }
 
 dependencies {
+		// Firebase Dependencies
+		implementation("com.google.firebase:firebase-bom:33.9.0")
+
 		implementation("com.appodeal.ads:sdk:3.7.0.0") {
         // Ad networks
         exclude(group = "com.appodeal.ads.sdk.networks", module = "admob")

@@ -1,6 +1,7 @@
 // dart packages
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 // flutter packages
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:intl/intl.dart';
 import 'package:feedback/feedback.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 // project packages
 import 'package:iou/colors.dart';
@@ -20,13 +23,65 @@ import 'package:iou/elements/transaction_box.dart';
 
 import 'package:iou/services/feedback.dart';
 import 'package:iou/services/appodeal.dart';
+import 'package:iou/services/firebase.dart';
+import 'package:iou/services/iap.dart';
+import 'package:iou/screens/settings_screen.dart';
+
+import 'firebase_options.dart';
+
+// Global state (matching coindrop structure)
+ValueNotifier<bool> loggedIn = ValueNotifier<bool>(false);
+late String? userID;
+String? avatarUrl;
+bool adFree = false;
+
+// Stub globals referenced by shared firebase.dart code
+ValueNotifier<int> drops = ValueNotifier<int>(0);
+ValueNotifier<int> totalDrops = ValueNotifier<int>(0);
+ValueNotifier<Map<String, double>> secondaryTokenBalance =
+    ValueNotifier<Map<String, double>>({});
+List sortedTokenKeyList = [];
+ValueNotifier<int> energyLVL = ValueNotifier<int>(1);
+ValueNotifier<int> remainingEnergy = ValueNotifier<int>(0);
+ValueNotifier<int> energyRechargeLVL = ValueNotifier<int>(1);
+ValueNotifier<int> clickLVL = ValueNotifier<int>(1);
+ValueNotifier<int> autoClickLVL = ValueNotifier<int>(0);
+ValueNotifier<int> lastCheckin = ValueNotifier<int>(0);
+ValueNotifier<int> userReferralEarnings = ValueNotifier<int>(0);
+String userRefCode = "";
+int userReferralCount = 0;
+String referredBy = "";
+double appEarnings = 0;
+double liquidityPercentage = 0;
+ValueNotifier<bool> brigthSharingActive = ValueNotifier<bool>(false);
+
+ValueNotifier<bool> storeRatingTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> clickbeebotTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> socialgiftTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> socialmoneyTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> winwalkTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> wewardTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> krakenTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> bbvaTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> klarnaTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> bitcoincashgiveawayTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> litecoingiveawayTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> iouTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> clusterminerTaskCompleted = ValueNotifier<bool>(true);
+ValueNotifier<bool> cointradeTaskCompleted = ValueNotifier<bool>(true);
 
 void main() async {
- 	runApp(
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: ".env");
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  runApp(
     BetterFeedback(
       child: const MyApp(),
     ),
-  ); 
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -73,10 +128,36 @@ class _MyHomePageState extends State<MyHomePage> {
 		AppodealServices as = AppodealServices();
 		as.init();
 
+		// Initialize IAP + start subscription status polling (only on mobile)
+		if (Platform.isAndroid || Platform.isIOS) {
+			InAppPurchasesServices iaps = InAppPurchasesServices();
+			iaps.init();
+			Timer.periodic(
+				const Duration(seconds: 2),
+				(t) => iaps.isAdFreeActive(),
+			);
+		}
+
+		// Silent auth check
+		_silentLoginCheck();
+
 		loadData();
 		Timer.periodic(const Duration(milliseconds: 300), (t) async {
 			loadData();
 		});
+	}
+
+	Future<void> _silentLoginCheck() async {
+		FirebaseAuthenticationServices fas = FirebaseAuthenticationServices();
+		bool signedIn = await fas.checkSignIn();
+		if (signedIn) {
+			final user = fas.firebaseAuth.currentUser;
+			if (user != null) {
+				loggedIn.value = true;
+				userID = user.uid;
+				avatarUrl = user.photoURL;
+			}
+		}
 	}
 
 	@override
@@ -159,7 +240,21 @@ class _MyHomePageState extends State<MyHomePage> {
 												color: darkTextColor,
 											),
 										),
-										Padding(padding: EdgeInsets.only(left: screenWidth * 0.07)),
+										IconButton(
+											onPressed: () {
+												Navigator.push(
+													context,
+													MaterialPageRoute(
+														builder: (context) => const SettingsScreen(),
+													),
+												);
+											},
+											icon: Icon(
+												Icons.settings,
+												color: darkTextColor,
+											),
+										),
+										Padding(padding: EdgeInsets.only(left: screenWidth * 0.04)),
 									]),
 
 									Padding(padding: EdgeInsets.only(bottom: screenHeight * 0.01)),
