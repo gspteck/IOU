@@ -8,15 +8,19 @@
         ".read": "$uid === auth.uid",
         ".write": "$uid === auth.uid",
 
-        "iou": {
-          ".read": "$uid === auth.uid",
-          ".write": "$uid === auth.uid",
+        // User-specific data lives directly under users/$uid (no 'iou' wrapper)
+        "lastLogin": { ".validate": "newData.isNumber()" },
+        "lastCheckin": { ".validate": "newData.isNumber()" },
+        "adFreeStatus": { ".validate": "newData.isBoolean()" },
+        "adFreeStatusTime": { ".validate": "newData.isNumber()" },
 
-          "lastLogin": { ".validate": "newData.isNumber()" },
-          "lastCheckin": { ".validate": "newData.isNumber()" },
-          "adFreeStatus": { ".validate": "newData.isBoolean()" },
-          "adFreeStatusTime": { ".validate": "newData.isNumber()" }
-        }
+        // Core IOU data (username + people/money + transactions)
+        "username": { ".validate": "newData.isString() || newData.val() == null" },
+        "moneydata": { ".validate": "newData.hasChildren() || newData.val() == null" },
+        "transactiondata": { ".validate": "newData.hasChildren() || newData.val() == null" },
+
+        // Allow other user fields (drops, levels, referrals, tokens, etc.) without breaking rules
+        "$other": { ".validate": true }
       }
     },
 

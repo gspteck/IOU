@@ -77,7 +77,7 @@ firebase deploy --only database
 Or manually paste the contents of `database.rules.json` into the Firebase Console → Realtime Database → Rules tab and publish.
 
 Current rules allow:
-- Authenticated users can only read/write their own `/users/$uid/iou` data
+- Authenticated users can only read/write their own `/users/$uid` data
 - Public read access to the top-level `/iou` node (for future global counters if needed)
 
 ### 1.8 Update .env (after you have keys)
@@ -189,7 +189,7 @@ You can test the UI flow without a published app using RevenueCat's "Override" f
    - You should see your avatar + "Logged in"
 
 4. **Purchase Ad Removal**:
-   - In Settings, tap **"Disable Ads • 3.99 or 0.99/mo"**
+   - In Settings, tap **"Disable Ads"**
    - RevenueCat paywall should open
    - Choose either the one-time or monthly option
    - Complete the **sandbox / test purchase**
@@ -202,7 +202,7 @@ You can test the UI flow without a published app using RevenueCat's "Override" f
 
 6. **Verify Firebase**:
    - Go to Firebase Console → Realtime Database
-   - Look for path: `users/{your-uid}/iou/adFreeStatus` → should be `true`
+   - Look for path: `users/{your-uid}/adFreeStatus` → should be `true`
 
 7. **Sign out test**:
    - In Settings tap "Sign Out"

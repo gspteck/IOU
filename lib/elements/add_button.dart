@@ -16,6 +16,10 @@ import 'package:iou/colors.dart';
 
 import 'package:iou/main.dart';
 import 'package:iou/services/appodeal.dart';
+import 'package:iou/services/firebase.dart';
+
+// currencySymbol + t() are already exported from main.dart
+
 
 class AddButton extends StatefulWidget {
   const AddButton({super.key});
@@ -87,7 +91,7 @@ class _AddButtonState extends State<AddButton> {
 											color: whiteTextColor,
 										),
 										decoration: InputDecoration(
-											hintText: "Name",
+											hintText: t('nameHint'),
 											hintStyle: GoogleFonts.bebasNeue(color: whiteTextColor),
 										),
 									),
@@ -102,7 +106,7 @@ class _AddButtonState extends State<AddButton> {
 											color:whiteTextColor,
 										),
 										decoration: InputDecoration(
-											hintText: "Money",
+											hintText: t('moneyHint'),
 											hintStyle: GoogleFonts.bebasNeue(color: whiteTextColor),
 										),
 									),
@@ -117,7 +121,7 @@ class _AddButtonState extends State<AddButton> {
 											});
 										},
 										child: Text(
-											"Cancel",
+											t('cancel'),
 											style: GoogleFonts.bebasNeue(
 												fontSize: 20,
 												color: whiteTextColor,
@@ -133,7 +137,7 @@ class _AddButtonState extends State<AddButton> {
 											});
 										},
 										child: Text(
-											"Add",
+											t('add'),
 											style: GoogleFonts.bebasNeue(
 												fontSize: 20,
 												color: whiteTextColor,
@@ -169,14 +173,26 @@ class _AddButtonState extends State<AddButton> {
 
 		await prefs.setString("moneydata", jsonEncode(oldDataMap));
 
+		// Also persist to Firebase when logged in
+		if (userID != null && userID!.isNotEmpty) {
+			try {
+				final fs = FirebaseServices();
+				final latestMoneyStr = prefs.getString("moneydata") ?? '{"data":[]}';
+				final latestTxStr = prefs.getString("transactiondata") ?? '{"data":[]}';
+				final latestUser = prefs.getString("username");
+				Map<String, dynamic>? m;
+				Map<String, dynamic>? t;
+				try { m = jsonDecode(latestMoneyStr) as Map<String, dynamic>; } catch (_) {}
+				try { t = jsonDecode(latestTxStr) as Map<String, dynamic>; } catch (_) {}
+				await fs.saveIOUData(username: latestUser, moneyData: m, transactionData: t);
+			} catch (_) {}
+		}
+
 		setState(() {
 			nameTextEditingController.text = "";
 			moneyTextEditingController.text = "";
 		});
 
-		if (!adFree) {
-			AppodealServices as = AppodealServices();
-			as.showInterstitial();
-		}
+		await AppodealServices().recordAction();
 	}
 }

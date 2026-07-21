@@ -20,7 +20,7 @@ class FirebaseServices {
 
   Future<void> updateLastLogin() async {
     try {
-      await dbRef.child("users/$userID/iou").update({
+      await dbRef.child("users/$userID").update({
         "lastLogin": DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
@@ -30,7 +30,7 @@ class FirebaseServices {
 
   Future<void> getLastCheckin() async {
     final snapshot =
-        await dbRef.child("users/$userID/iou/lastCheckin").once();
+        await dbRef.child("users/$userID/lastCheckin").once();
     var value = snapshot.snapshot.value;
     if (value is int) {
       lastCheckin.value = value;
@@ -41,7 +41,7 @@ class FirebaseServices {
 
   Future<void> setLastCheckin() async {
     try {
-      await dbRef.child("users/$userID/iou/lastCheckin").runTransaction((
+      await dbRef.child("users/$userID/lastCheckin").runTransaction((
         data,
       ) {
         data = DateTime.now().millisecondsSinceEpoch;
@@ -66,7 +66,7 @@ class FirebaseServices {
   }
 
   void getDROPs() {
-    dbRef.child("users/$userID/iou/drops").onValue.listen((
+    dbRef.child("users/$userID/drops").onValue.listen((
       DatabaseEvent event,
     ) async {
       var snapshot = event.snapshot.value;
@@ -85,7 +85,7 @@ class FirebaseServices {
 
     try {
       await Future.wait([
-        dbRef.child("users/$userID/iou/drops").runTransaction((data) {
+        dbRef.child("users/$userID/drops").runTransaction((data) {
           final current = (data as int?) ?? 0;
           return Transaction.success(current + increment);
         }),
@@ -108,7 +108,7 @@ class FirebaseServices {
 
   Future<void> removeDrops(int amount) async {
     try {
-      await dbRef.child("users/$userID/iou/drops").runTransaction((data) {
+      await dbRef.child("users/$userID/drops").runTransaction((data) {
         final currentDrops = (data as int?) ?? 0;
         final newDrops = max(0, currentDrops - amount);
         if (data is int) {
@@ -142,7 +142,7 @@ class FirebaseServices {
 
   Future<void> getSecondaryTokens() async {
     final event =
-        await dbRef.child('users/$userID/iou/secondaryTokens').once();
+        await dbRef.child('users/$userID/secondaryTokens').once();
     final data = event.snapshot.value;
 
     if (data != null && data is Map) {
@@ -184,7 +184,7 @@ class FirebaseServices {
             });
 
         dbRef
-            .child('users/$userID/iou/secondaryTokens/$randomTokenName')
+            .child('users/$userID/secondaryTokens/$randomTokenName')
             .runTransaction((balance) {
               if (balance != null && balance is num) {
                 balance += tokenAmount;
@@ -200,7 +200,7 @@ class FirebaseServices {
   }
 
   Future<void> getActionData() async {
-    final event = await dbRef.child("users/$userID/iou").once();
+    final event = await dbRef.child("users/$userID").once();
     var snapshot = event.snapshot.value;
     if (snapshot is Map) {
       energyLVL.value = snapshot["energyLevel"] ?? 1;
@@ -212,7 +212,7 @@ class FirebaseServices {
 
   updateActionData(String type, int value) async {
     try {
-      await dbRef.child("users/$userID/iou/$type").runTransaction((data) {
+      await dbRef.child("users/$userID/$type").runTransaction((data) {
         return Transaction.success(value);
       });
     } catch (e) {
@@ -227,7 +227,7 @@ class FirebaseServices {
 
   addReferredBy(String refCode) async {
     try {
-      await dbRef.child("users/$userID/iou/referredBy").set(refCode);
+      await dbRef.child("users/$userID/referredBy").set(refCode);
     } catch (e) {
       //print("Failed to update user Ref Code: $e");
     }
@@ -248,11 +248,11 @@ class FirebaseServices {
 
   Future<void> _createAndSetReferralCode() async {
     // Placeholder - iou does not use referral codes yet
-    await dbRef.child("users/$userID/iou/refCode").set("");
+    await dbRef.child("users/$userID/refCode").set("");
   }
 
   Future<void> getUserReferralData() async {
-    final event = await dbRef.child("users/$userID/iou").once();
+    final event = await dbRef.child("users/$userID").once();
     var snapshot = event.snapshot.value;
     if (snapshot is Map) {
       referredBy = snapshot["referredBy"] ?? "";
@@ -301,7 +301,7 @@ class FirebaseServices {
 
   Future<void> getCompletedSponsoredTasks() async {
     final event =
-        await dbRef.child("users/$userID/iou/sponsoredTasks").once();
+        await dbRef.child("users/$userID/sponsoredTasks").once();
     var snapshot = event.snapshot.value;
     if (snapshot is Map) {
       // Reuse coindrop task flags for parity if needed later
@@ -316,7 +316,7 @@ class FirebaseServices {
   ) async {
     try {
       await dbRef
-          .child("users/$userID/iou/sponsoredTasks/$taskID")
+          .child("users/$userID/sponsoredTasks/$taskID")
           .set(completed);
     } catch (e) {
       //print("Failed to update completed sponsored task $taskID: $e");
@@ -325,12 +325,148 @@ class FirebaseServices {
 
   setAdFreeStatus(bool status) async {
     try {
-      await dbRef.child("users/$userID/iou/adFreeStatus").set(status);
+      await dbRef.child("users/$userID/adFreeStatus").set(status);
       await dbRef
-          .child("users/$userID/iou/adFreeStatusTime")
+          .child("users/$userID/adFreeStatusTime")
           .set(DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       //print("Failed to update ad free status: $e");
+    }
+  }
+
+  /// Load adFreeStatus from cloud (if present) and apply it to the reactive flag.
+  /// This enables hiding the "Disable Ads" button after a purchase on another device.
+  Future<void> loadAdFreeStatusFromCloud() async {
+    if (userID == null || userID!.isEmpty) return;
+    try {
+      final snap = await dbRef.child("users/$userID/adFreeStatus").once();
+      final val = snap.snapshot.value;
+      if (val is bool) {
+        adFree.value = val;
+      }
+    } catch (_) {
+      // Non-fatal; local/RevenueCat value will be used.
+    }
+  }
+
+  /// Save the core IOU app data (username + people/money + transactions) to RTDB.
+  /// Safe to call even if not logged in (no-op).
+  Future<void> saveIOUData({
+    String? username,
+    Map<String, dynamic>? moneyData,
+    Map<String, dynamic>? transactionData,
+  }) async {
+    if (userID == null || userID!.isEmpty) return;
+    final Map<String, dynamic> updates = {};
+    if (username != null) updates['username'] = username;
+    if (moneyData != null) updates['moneydata'] = moneyData;
+    if (transactionData != null) updates['transactiondata'] = transactionData;
+
+    if (updates.isNotEmpty) {
+      try {
+        await dbRef.child("users/$userID").update(updates);
+      } catch (_) {
+        // Silent fail is acceptable; local data is still saved.
+      }
+    }
+  }
+
+  /// Load previously saved IOU data from RTDB for the current user.
+  Future<Map<String, dynamic>?> loadIOUData() async {
+    if (userID == null || userID!.isEmpty) return null;
+    try {
+      final event = await dbRef.child("users/$userID").once();
+      final value = event.snapshot.value;
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Called after login (or on silent sign-in check).
+  /// - If cloud data exists → pull it into SharedPreferences (UI will see it on next loadData).
+  /// - If no cloud data → push current local data up so it starts being backed up.
+  Future<void> syncIOUDataOnLogin() async {
+    if (userID == null || userID!.isEmpty) return;
+
+    try {
+      await updateLastLogin();
+    } catch (_) {}
+
+    final cloud = await loadIOUData();
+    final prefs = await SharedPreferences.getInstance();
+
+    if (cloud != null) {
+      final hasCoreCloudData = cloud['moneydata'] != null ||
+          cloud['transactiondata'] != null ||
+          cloud['username'] != null;
+
+      if (hasCoreCloudData) {
+        // Cloud data wins on login
+        if (cloud['username'] is String) {
+          final cloudUsername = cloud['username'] as String;
+          if (cloudUsername.isNotEmpty) {
+            await prefs.setString('username', cloudUsername);
+          }
+        }
+        if (cloud['moneydata'] is Map) {
+          await prefs.setString('moneydata', jsonEncode(cloud['moneydata']));
+        }
+        if (cloud['transactiondata'] is Map) {
+          await prefs.setString('transactiondata', jsonEncode(cloud['transactiondata']));
+        }
+      } else {
+        // No core data in cloud yet — push local data up
+        final localUsername = prefs.getString('username');
+        final localMoneyStr = prefs.getString('moneydata');
+        final localTxStr = prefs.getString('transactiondata');
+
+        Map<String, dynamic>? localMoneyMap;
+        Map<String, dynamic>? localTxMap;
+
+        if (localMoneyStr != null && localMoneyStr.isNotEmpty) {
+          try {
+            localMoneyMap = jsonDecode(localMoneyStr) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        if (localTxStr != null && localTxStr.isNotEmpty) {
+          try {
+            localTxMap = jsonDecode(localTxStr) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+
+        await saveIOUData(
+          username: (localUsername != null && localUsername.isNotEmpty) ? localUsername : null,
+          moneyData: localMoneyMap,
+          transactionData: localTxMap,
+        );
+      }
+    } else {
+      // No (or empty) cloud data — upload whatever is currently stored locally
+      final localUsername = prefs.getString('username');
+      final localMoneyStr = prefs.getString('moneydata');
+      final localTxStr = prefs.getString('transactiondata');
+
+      Map<String, dynamic>? localMoneyMap;
+      Map<String, dynamic>? localTxMap;
+
+      if (localMoneyStr != null && localMoneyStr.isNotEmpty) {
+        try {
+          localMoneyMap = jsonDecode(localMoneyStr) as Map<String, dynamic>;
+        } catch (_) {}
+      }
+      if (localTxStr != null && localTxStr.isNotEmpty) {
+        try {
+          localTxMap = jsonDecode(localTxStr) as Map<String, dynamic>;
+        } catch (_) {}
+      }
+
+      await saveIOUData(
+        username: (localUsername != null && localUsername.isNotEmpty) ? localUsername : null,
+        moneyData: localMoneyMap,
+        transactionData: localTxMap,
+      );
     }
   }
 
@@ -339,7 +475,7 @@ class FirebaseServices {
     if (brigthSharingActive.value) {
       multiplier += 2;
     }
-    if (adFree) {
+    if (adFree.value) {
       multiplier += 100;
     }
 
@@ -349,6 +485,7 @@ class FirebaseServices {
 }
 
 class FirebaseAuthenticationServices {
+  // Use the singleton instance consistently
   final GoogleSignIn googleSignIn = GoogleSignIn.instance;
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
@@ -374,28 +511,55 @@ class FirebaseAuthenticationServices {
   // Google Sign In
   Future<UserCredential?> signInWithGoogle(BuildContext context) async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
-      await googleSignIn.initialize();
-      final GoogleSignInAccount? googleUser = await googleSignIn.authenticate();
-      if (googleUser == null) {
+      // Use the class field (singleton) consistently
+      // serverClientId = WEB client ID (the one with client_type: 3 in google-services.json)
+      await googleSignIn.initialize(
+        serverClientId: '1039241873041-tga17qgril98a53ivu331cmbdggs9i5b.apps.googleusercontent.com',
+      );
+
+      final GoogleSignInAccount? maybeUser = await googleSignIn.authenticate();
+      if (maybeUser == null) {
+        // User cancelled the sign-in flow
         return null;
       }
+
+      // In google_sign_in 7.x, authentication is a synchronous getter (not a Future)
+      final GoogleSignInAccount googleUser = maybeUser;
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      if (googleAuth.idToken == null) {
+        throw Exception(
+          'idToken is null. '
+          'Verify serverClientId (web client ID) and that the app\'s SHA-1 fingerprint is registered in Firebase Console → Authentication → Sign-in method → Google.',
+        );
+      }
+
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
+        // Note: accessToken is not exposed in current GoogleSignInAuthentication on this plugin version.
+        // idToken alone is sufficient when serverClientId (web client ID) is provided.
       );
+
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
       loggedIn.value = true;
       return userCredential;
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ERROR: $error'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+    } catch (error, stack) {
+      // Log full details
+      // ignore: avoid_print
+      print('Google Sign-In error: $error');
+      // ignore: avoid_print
+      print(stack);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Account reauth failed: $error'),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
       return null;
     }
   }
@@ -423,7 +587,7 @@ class FirebaseAuthenticationServices {
     clickLVL.value = 1;
     autoClickLVL.value = 0;
     lastCheckin.value = 0;
-    adFree = false;
+    adFree.value = false;
 
     // Coindrop task flags (harmless if unused in iou)
     storeRatingTaskCompleted.value = true;

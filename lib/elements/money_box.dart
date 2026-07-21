@@ -10,6 +10,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // project packages
 import 'package:iou/colors.dart';
+import 'package:iou/main.dart';
+import 'package:iou/services/appodeal.dart';
+import 'package:iou/services/firebase.dart';
+
+String _fmt(double m) {
+  final sym = currencySymbol;
+  if (m > 999999999) {
+    return "$sym${(m / 1000000000).toStringAsFixed(1)}B";
+  } else if (m > 999999) {
+    return "$sym${(m / 1000000).toStringAsFixed(1)}M";
+  } else if (m > 999) {
+    return "$sym${(m / 1000).toStringAsFixed(1)}K";
+  } else {
+    return "$sym${m.toStringAsFixed(2)}";
+  }
+}
 
 
 class MoneyBox extends StatefulWidget {
@@ -26,7 +42,7 @@ class MoneyBox extends StatefulWidget {
 
 	final Color bgColor;
 	final String name;
-	final double money;
+	final num money; // accept int or double (from json)
 	final int percentage;
 
   @override
@@ -86,13 +102,7 @@ class _MoneyBoxState extends State<MoneyBox> {
 							const Spacer(),
 							open
 								? Text(
-									widget.money > 999999999
-										? "\$${(widget.money / 1000000000).toStringAsFixed(1)}B"
-										: widget.money > 999999
-											? "\$${(widget.money / 1000000).toStringAsFixed(1)}M"
-											: widget.money > 999
-												? "\$${(widget.money / 1000).toStringAsFixed(1)}K"
-												: "\$${(widget.money).toStringAsFixed(2)}",
+									_fmt((widget.money is num) ? (widget.money as num).toDouble() : 0.0),
 									style: GoogleFonts.bebasNeue(
 										fontSize: 25,
 										fontWeight: FontWeight.bold,
@@ -104,13 +114,7 @@ class _MoneyBoxState extends State<MoneyBox> {
 						]),	
 						!open
 						 	? Text(
-								widget.money > 999999999
-									? "\$${(widget.money / 1000000000).toStringAsFixed(1)}B"
-									: widget.money > 999999
-										? "\$${(widget.money / 1000000).toStringAsFixed(1)}M"
-										: widget.money > 999
-											? "\$${(widget.money / 1000).toStringAsFixed(1)}K"
-											: "\$${(widget.money).toStringAsFixed(2)}",
+								_fmt((widget.money is num) ? (widget.money as num).toDouble() : 0.0),
 								style: GoogleFonts.bebasNeue(
 									fontSize: 45,
 									fontWeight: FontWeight.bold,
@@ -125,7 +129,7 @@ class _MoneyBoxState extends State<MoneyBox> {
 											color: whiteTextColor,
 										),
 										decoration: InputDecoration(
-											hintText: "Money",
+											hintText: t('moneyHint'),
 											hintStyle: GoogleFonts.bebasNeue(color: whiteTextColor),
 										),
 									),
@@ -203,7 +207,8 @@ class _MoneyBoxState extends State<MoneyBox> {
 		String moneyData = prefs.getString("moneydata") ?? '{"data":[]}';
 		Map moneyDataMap = jsonDecode(moneyData);	
 		
-		double money = moneyDataMap["data"][widget.index]["money"];
+		final rawMoney = moneyDataMap["data"][widget.index]["money"];
+		double money = (rawMoney is num) ? rawMoney.toDouble() : 0.0;
 		money += double.parse(moneyTextEditingController.text);
 		moneyDataMap["data"][widget.index]["money"] = money;
 
@@ -211,10 +216,27 @@ class _MoneyBoxState extends State<MoneyBox> {
 
 		await addTransaction(true);
 
+		// Sync to Firebase when logged in
+		if (userID != null && userID!.isNotEmpty) {
+			try {
+				final fs = FirebaseServices();
+				final latestMoneyStr = prefs.getString("moneydata") ?? '{"data":[]}';
+				final latestTxStr = prefs.getString("transactiondata") ?? '{"data":[]}';
+				final latestUser = prefs.getString("username");
+				Map<String, dynamic>? m;
+				Map<String, dynamic>? t;
+				try { m = jsonDecode(latestMoneyStr) as Map<String, dynamic>; } catch (_) {}
+				try { t = jsonDecode(latestTxStr) as Map<String, dynamic>; } catch (_) {}
+				await fs.saveIOUData(username: latestUser, moneyData: m, transactionData: t);
+			} catch (_) {}
+		}
+
 		setState(() {
 			moneyTextEditingController.text = "";
 			open = false;
 		});
+
+		await AppodealServices().recordAction();
 	}
 
 	removeMoney() async {
@@ -222,7 +244,8 @@ class _MoneyBoxState extends State<MoneyBox> {
 		String moneyData = prefs.getString("moneydata") ?? '{"data":[]}';
 		Map moneyDataMap = jsonDecode(moneyData);	
 		
-		double money = moneyDataMap["data"][widget.index]["money"];
+		final rawMoney = moneyDataMap["data"][widget.index]["money"];
+		double money = (rawMoney is num) ? rawMoney.toDouble() : 0.0;
 		money -= double.parse(moneyTextEditingController.text);
 		moneyDataMap["data"][widget.index]["money"] = money;
 
@@ -230,10 +253,27 @@ class _MoneyBoxState extends State<MoneyBox> {
 
 		await addTransaction(false);
 
+		// Sync to Firebase when logged in
+		if (userID != null && userID!.isNotEmpty) {
+			try {
+				final fs = FirebaseServices();
+				final latestMoneyStr = prefs.getString("moneydata") ?? '{"data":[]}';
+				final latestTxStr = prefs.getString("transactiondata") ?? '{"data":[]}';
+				final latestUser = prefs.getString("username");
+				Map<String, dynamic>? m;
+				Map<String, dynamic>? t;
+				try { m = jsonDecode(latestMoneyStr) as Map<String, dynamic>; } catch (_) {}
+				try { t = jsonDecode(latestTxStr) as Map<String, dynamic>; } catch (_) {}
+				await fs.saveIOUData(username: latestUser, moneyData: m, transactionData: t);
+			} catch (_) {}
+		}
+
 		setState(() {
 			moneyTextEditingController.text = "";
 			open = false;
 		});
+
+		await AppodealServices().recordAction();
 	}
 
 	deletePerson() async {
@@ -245,10 +285,27 @@ class _MoneyBoxState extends State<MoneyBox> {
 
 		await prefs.setString("moneydata", jsonEncode(moneyDataMap));
 
+		// Sync to Firebase when logged in
+		if (userID != null && userID!.isNotEmpty) {
+			try {
+				final fs = FirebaseServices();
+				final latestMoneyStr = prefs.getString("moneydata") ?? '{"data":[]}';
+				final latestTxStr = prefs.getString("transactiondata") ?? '{"data":[]}';
+				final latestUser = prefs.getString("username");
+				Map<String, dynamic>? m;
+				Map<String, dynamic>? t;
+				try { m = jsonDecode(latestMoneyStr) as Map<String, dynamic>; } catch (_) {}
+				try { t = jsonDecode(latestTxStr) as Map<String, dynamic>; } catch (_) {}
+				await fs.saveIOUData(username: latestUser, moneyData: m, transactionData: t);
+			} catch (_) {}
+		}
+
 		setState(() {
 			moneyTextEditingController.text = "";
 			open = false;
 		});
+
+		await AppodealServices().recordAction();
 	}
 
 	addTransaction(bool adding) async {
@@ -263,5 +320,20 @@ class _MoneyBoxState extends State<MoneyBox> {
 		});
 
 		await prefs.setString("transactiondata", jsonEncode(transactionDataMap));
+
+		// Sync to Firebase when logged in (transactions are updated here)
+		if (userID != null && userID!.isNotEmpty) {
+			try {
+				final fs = FirebaseServices();
+				final latestMoneyStr = prefs.getString("moneydata") ?? '{"data":[]}';
+				final latestTxStr = prefs.getString("transactiondata") ?? '{"data":[]}';
+				final latestUser = prefs.getString("username");
+				Map<String, dynamic>? m;
+				Map<String, dynamic>? t;
+				try { m = jsonDecode(latestMoneyStr) as Map<String, dynamic>; } catch (_) {}
+				try { t = jsonDecode(latestTxStr) as Map<String, dynamic>; } catch (_) {}
+				await fs.saveIOUData(username: latestUser, moneyData: m, transactionData: t);
+			} catch (_) {}
+		}
 	}
 }

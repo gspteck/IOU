@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "1039241873041-ein36f0slb12fb8q7sc7l96na8nod1fl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gspteck.iou",
+            "certificate_hash": "8ab630f7d4b2066eb9d42d5ffa904c2ea3a0b4ad"
+          }
+        },
+        {
           "client_id": "1039241873041-tga17qgril98a53ivu331cmbdggs9i5b.apps.googleusercontent.com",
           "client_type": 3
         }

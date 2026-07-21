@@ -8,6 +8,7 @@ import 'package:iou/colors.dart';
 // third-party packages
 
 // project packages
+import 'package:iou/main.dart';
 
 class TransactionBox extends StatefulWidget {
   const TransactionBox({
@@ -59,7 +60,7 @@ class _TransactionBoxState extends State<TransactionBox> {
 				),
 				const Spacer(),
 				Text(
-					widget.adding ? "+\$${widget.money}" : "-\$${widget.money}",
+					(widget.adding ? '+' : '-') + currencySymbol + widget.money,
 					style: GoogleFonts.bebasNeue(
 						fontSize: 25,
 						fontWeight: FontWeight.bold,
